@@ -1,0 +1,25 @@
+{
+  "appId": "com.twinsync.app",
+  "productName": "TwinSync",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "dist/**/*",
+    "node_modules/**/*",
+    "electron/**/*"
+  ],
+  "mac": {
+    "category": "public.app-category.utilities",
+    "target": "dmg",
+    "icon": "assets/icon.icns"
+  },
+  "dmg": {
+    "title": "TwinSync Installer",
+    "icon": "assets/icon.icns"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  }
+}
