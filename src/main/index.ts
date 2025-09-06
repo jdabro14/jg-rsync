@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { spawn } from 'child_process';
 
-class SimpleTwinSync {
+class JGRsync {
   private mainWindow: BrowserWindow | null = null;
   private isConnected = false;
   private currentConfig: any = null;
@@ -12,12 +12,24 @@ class SimpleTwinSync {
   }
 
   private setupIpcHandlers() {
+    console.log('Setting up IPC handlers');
     ipcMain.handle('connect', this.handleConnect.bind(this));
     ipcMain.handle('disconnect', this.handleDisconnect.bind(this));
-    ipcMain.handle('list-local', this.handleListLocal.bind(this));
+    ipcMain.handle('list-local', (event: any, dir: string) => {
+      console.log('list-local handler called with:', dir);
+      return this.handleListLocal(event, dir);
+    });
     ipcMain.handle('list-remote', this.handleListRemote.bind(this));
     ipcMain.handle('upload', this.handleUpload.bind(this));
     ipcMain.handle('download', this.handleDownload.bind(this));
+    ipcMain.handle('save-config', (event: any, config: any) => {
+      console.log('save-config handler called with:', config);
+      return this.handleSaveConfig(event, config);
+    });
+    ipcMain.handle('load-configs', this.handleLoadConfigs.bind(this));
+    ipcMain.handle('delete-config', this.handleDeleteConfig.bind(this));
+    ipcMain.handle('local-transfer', this.handleLocalTransfer.bind(this));
+    console.log('All IPC handlers registered');
   }
 
   private async handleConnect(_event: any, config: any): Promise<void> {
@@ -69,23 +81,39 @@ class SimpleTwinSync {
   }
 
   private async handleListLocal(_event: any, dir: string): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      const ls = spawn('ls', ['-la', dir]);
-      let output = '';
-      
-      ls.stdout.on('data', (data) => {
-        output += data.toString();
-      });
+    console.log('handleListLocal called with directory:', dir);
+    try {
+      return new Promise((resolve, reject) => {
+        console.log('Spawning ls process for directory:', dir);
+        const ls = spawn('ls', ['-la', dir]);
+        let output = '';
+        let errorOutput = '';
+        
+        ls.stdout.on('data', (data) => {
+          output += data.toString();
+        });
 
-      ls.on('close', (code) => {
-        if (code === 0) {
-          const files = this.parseLsOutput(output, dir);
-          resolve(files);
-        } else {
-          reject(new Error('Failed to list local files'));
-        }
+        ls.stderr.on('data', (data) => {
+          errorOutput += data.toString();
+          console.error('ls stderr:', data.toString());
+        });
+
+        ls.on('close', (code) => {
+          console.log(`ls process exited with code ${code}`);
+          if (code === 0) {
+            const files = this.parseLsOutput(output, dir);
+            console.log(`Found ${files.length} files in ${dir}`);
+            resolve(files);
+          } else {
+            console.error('Failed to list local files:', errorOutput);
+            reject(new Error(`Failed to list local files: ${errorOutput}`));
+          }
+        });
       });
-    });
+    } catch (error) {
+      console.error('Error in handleListLocal:', error);
+      throw error;
+    }
   }
 
   private async handleListRemote(_event: any, dir: string): Promise<any[]> {
@@ -213,6 +241,96 @@ class SimpleTwinSync {
     return files;
   }
 
+  private async handleSaveConfig(_event: any, config: any): Promise<void> {
+    console.log('handleSaveConfig called with config:', config);
+    try {
+      if (!config || !config.name) {
+        console.error('Invalid config object or missing name property');
+        throw new Error('Invalid configuration: missing name');
+      }
+
+      const fs = require('fs');
+      const path = require('path');
+      const configDir = path.join(app.getPath('userData'), 'configs');
+      
+      console.log('Config directory:', configDir);
+      
+      // Create configs directory if it doesn't exist
+      if (!fs.existsSync(configDir)) {
+        console.log('Creating config directory');
+        fs.mkdirSync(configDir, { recursive: true });
+      }
+      
+      const configPath = path.join(configDir, `${config.name}.json`);
+      console.log('Saving config to:', configPath);
+      
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      console.log(`Config saved successfully: ${config.name}`);
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Error in handleSaveConfig:', error);
+      throw error;
+    }
+  }
+
+  private async handleLoadConfigs(): Promise<any[]> {
+    const fs = require('fs');
+    const path = require('path');
+    const configDir = path.join(app.getPath('userData'), 'configs');
+    
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+      return [];
+    }
+    
+    const configFiles = fs.readdirSync(configDir).filter(file => file.endsWith('.json'));
+    const configs = configFiles.map(file => {
+      const configPath = path.join(configDir, file);
+      const configData = fs.readFileSync(configPath, 'utf8');
+      return JSON.parse(configData);
+    });
+    
+    return configs;
+  }
+
+  private async handleDeleteConfig(_event: any, configName: string): Promise<void> {
+    const fs = require('fs');
+    const path = require('path');
+    const configPath = path.join(app.getPath('userData'), 'configs', `${configName}.json`);
+    
+    if (fs.existsSync(configPath)) {
+      fs.unlinkSync(configPath);
+      console.log(`Config deleted: ${configName}`);
+    }
+  }
+
+  private async handleLocalTransfer(_event: any, sourcePaths: string[], destDir: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const rsync = spawn('rsync', [
+        '-avz',
+        '--progress',
+        ...sourcePaths,
+        destDir
+      ]);
+
+      rsync.stdout.on('data', (data) => {
+        console.log('Local transfer progress:', data.toString());
+      });
+
+      rsync.stderr.on('data', (data) => {
+        console.log('Local transfer info:', data.toString());
+      });
+
+      rsync.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error('Local transfer failed'));
+        }
+      });
+    });
+  }
+
   createWindow() {
     this.mainWindow = new BrowserWindow({
       width: 1200,
@@ -220,7 +338,7 @@ class SimpleTwinSync {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        preload: join(__dirname, '../preload/simple.js')
+        preload: join(__dirname, '../preload/index.js')
       }
     });
 
@@ -228,16 +346,16 @@ class SimpleTwinSync {
       this.mainWindow.loadURL('http://localhost:5173');
       this.mainWindow.webContents.openDevTools();
     } else {
-      this.mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+      this.mainWindow.loadFile(join(__dirname, '../dist/index.html'));
     }
   }
 }
 
 // Create and run the app
-const twinSync = new SimpleTwinSync();
+const jgRsync = new JGRsync();
 
 app.whenReady().then(() => {
-  twinSync.createWindow();
+  jgRsync.createWindow();
 });
 
 app.on('window-all-closed', () => {
@@ -248,6 +366,6 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    twinSync.createWindow();
+    jgRsync.createWindow();
   }
 });

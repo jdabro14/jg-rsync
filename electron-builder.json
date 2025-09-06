@@ -1,25 +1,55 @@
 {
-  "appId": "com.twinsync.app",
-  "productName": "TwinSync",
+  "appId": "com.jg-rsync.app",
+  "productName": "JG-Rsync",
   "directories": {
-    "output": "dist-electron"
+    "output": "dist_electron",
+    "buildResources": "assets"
   },
   "files": [
     "dist/**/*",
+    "electron/**/*",
     "node_modules/**/*",
-    "electron/**/*"
+    "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "assets",
+      "to": "assets"
+    }
   ],
   "mac": {
     "category": "public.app-category.utilities",
-    "target": "dmg",
-    "icon": "assets/icon.icns"
+    "target": ["dmg"],
+    "icon": "assets/icon.icns",
+    "darkModeSupport": true,
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "identity": null,
+    "artifactName": "${productName}.${ext}",
+    "entitlements": "assets/entitlements.mac.plist",
+    "entitlementsInherit": "assets/entitlements.mac.plist"
   },
   "dmg": {
-    "title": "TwinSync Installer",
+    "contents": [
+      {
+        "x": 130,
+        "y": 220
+      },
+      {
+        "x": 410,
+        "y": 220,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ],
+    "window": {
+      "width": 540,
+      "height": 380
+    },
+    "iconSize": 128,
+    "title": "JG-Rsync Installer",
     "icon": "assets/icon.icns"
   },
-  "nsis": {
-    "oneClick": false,
-    "allowToChangeInstallationDirectory": true
-  }
+  "afterSign": "scripts/notarize.js",
+  "publish": null
 }

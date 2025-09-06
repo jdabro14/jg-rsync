@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-// Simple test script to verify TwinSync is running
+// Simple test script to verify JG-Rsync is running
 const http = require('http');
 
-console.log('🧪 Testing TwinSync Application...\n');
+console.log('🧪 Testing JG-Rsync Application...\n');
 
 // Test Vite dev server
 const testVite = () => {
@@ -68,8 +68,8 @@ async function runTests() {
   console.log(`Electron Process: ${electronOk ? '✅ PASS' : '❌ FAIL'}`);
   
   if (viteOk && electronOk) {
-    console.log('\n🎉 TwinSync is running successfully!');
-    console.log('   You should see the TwinSync window open on your screen.');
+    console.log('\n🎉 JG-Rsync is running successfully!');
+    console.log('   You should see the JG-Rsync window open on your screen.');
     console.log('   If not, check the terminal for any error messages.');
   } else {
     console.log('\n⚠️  Some components are not running properly.');

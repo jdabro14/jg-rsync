@@ -3,7 +3,7 @@
 const { spawn } = require('child_process');
 const http = require('http');
 
-console.log('🔍 TwinSync Runtime Error Detection');
+console.log('🔍 JG-Rsync Runtime Error Detection');
 console.log('==================================\n');
 
 let electronProcess;
@@ -184,9 +184,9 @@ async function runRuntimeTest() {
   }
   
   if (errors.length === 0) {
-    console.log('\n🎉 TwinSync runtime test passed!');
+    console.log('\n🎉 JG-Rsync runtime test passed!');
   } else {
-    console.log('\n⚠️  TwinSync has runtime errors that need to be fixed.');
+    console.log('\n⚠️  JG-Rsync has runtime errors that need to be fixed.');
   }
   
   process.exit(errors.length > 0 ? 1 : 0);

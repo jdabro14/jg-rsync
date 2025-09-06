@@ -1,4 +1,4 @@
-# TwinSync
+# JG-Rsync
 
 A production-grade two-pane file transfer app for macOS that works like WinSCP. Features local and remote file browsing with rsync-powered transfers over SSH/SFTP.
 
@@ -163,13 +163,13 @@ npm run test:coverage
 ## Configuration
 
 ### Settings Location
-Settings are stored in `~/.twinsync/settings.json`
+Settings are stored in `~/.jg-rsync/settings.json`
 
 ### Profiles Location
-Profiles are stored in `~/.twinsync/profiles.json`
+Profiles are stored in `~/.jg-rsync/profiles.json`
 
 ### Logs Location
-Application logs are stored in `~/Library/Logs/TwinSync/app.log`
+Application logs are stored in `~/Library/Logs/JG-Rsync/app.log`
 
 ## Troubleshooting
 

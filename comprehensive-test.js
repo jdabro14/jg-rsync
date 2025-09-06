@@ -5,7 +5,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🧪 Comprehensive TwinSync Testing Suite');
+console.log('🧪 Comprehensive JG-Rsync Testing Suite');
 console.log('=====================================\n');
 
 let testResults = {
@@ -282,9 +282,9 @@ async function runAllTests() {
   }
   
   if (testResults.build && testResults.vite && testResults.electron && testResults.runtimeErrors.length === 0) {
-    console.log('\n🎉 All tests passed! TwinSync is ready to use.');
+    console.log('\n🎉 All tests passed! JG-Rsync is ready to use.');
   } else {
-    console.log('\n⚠️  Some tests failed. Please fix the issues before using TwinSync.');
+    console.log('\n⚠️  Some tests failed. Please fix the issues before using JG-Rsync.');
   }
   
   // Clean up

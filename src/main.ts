@@ -1,8 +1,10 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
+import * as path from 'path';
 import { spawn } from 'child_process';
+import * as fs from 'fs';
 
-class SimpleTwinSync {
+class JGRsync {
   private mainWindow: BrowserWindow | null = null;
   private isConnected = false;
   private currentConfig: any = null;
@@ -76,30 +78,52 @@ class SimpleTwinSync {
   }
 
   private async handleListLocal(_event: any, dir: string): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      const ls = spawn('ls', ['-la', dir]);
-      let output = '';
-      let errorOutput = '';
+    try {
+      console.log('Listing local files in:', dir);
       
-      ls.stdout.on('data', (data) => {
-        output += data.toString();
-      });
+      // Check if directory exists and is accessible
+      const stats = await fs.promises.stat(dir);
+      if (!stats.isDirectory()) {
+        throw new Error(`Path is not a directory: ${dir}`);
+      }
 
-      ls.stderr.on('data', (data) => {
-        errorOutput += data.toString();
-      });
-
-      ls.on('close', (code) => {
-        if (code === 0) {
-          const files = this.parseLsOutput(output, dir);
-          console.log('Local files found:', files.length, 'in', dir);
-          resolve(files);
-        } else {
-          console.error('ls error:', errorOutput);
-          reject(new Error(`Failed to list local files: ${errorOutput}`));
+      // Read directory contents
+      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+      
+      const files = await Promise.all(entries.map(async (entry) => {
+        const fullPath = path.join(dir, entry.name);
+        let size = undefined;
+        
+        if (entry.isFile()) {
+          try {
+            const fileStats = await fs.promises.stat(fullPath);
+            size = fileStats.size;
+          } catch (error) {
+            console.warn(`Could not get size for ${fullPath}:`, error.message);
+          }
         }
+        
+        return {
+          name: entry.name,
+          path: fullPath,
+          isDirectory: entry.isDirectory(),
+          size: size
+        };
+      }));
+
+      // Sort: directories first, then files, both alphabetically
+      files.sort((a, b) => {
+        if (a.isDirectory && !b.isDirectory) return -1;
+        if (!a.isDirectory && b.isDirectory) return 1;
+        return a.name.localeCompare(b.name);
       });
-    });
+
+      console.log('Local files found:', files.length, 'in', dir);
+      return files;
+    } catch (error) {
+      console.error('Error listing local files:', error);
+      throw new Error(`Failed to list local files: ${error.message}`);
+    }
   }
 
   private async handleListRemote(_event: any, dir: string): Promise<any[]> {
@@ -152,7 +176,7 @@ class SimpleTwinSync {
           if (output.includes('ERROR: Directory not found')) {
             reject(new Error('Remote directory not found'));
           } else {
-            const files = this.parseLsOutput(output, dir);
+            const files = this.parseRemoteLsOutput(output, dir);
             console.log('Remote files found:', files.length, files);
             resolve(files);
           }
@@ -246,7 +270,7 @@ class SimpleTwinSync {
     const path = require('path');
     const os = require('os');
     
-    const configDir = path.join(os.homedir(), '.twinsync');
+    const configDir = path.join(os.homedir(), '.jg-rsync');
     const configFile = path.join(configDir, 'configs.json');
     
     // Ensure config directory exists
@@ -275,7 +299,7 @@ class SimpleTwinSync {
     const path = require('path');
     const os = require('os');
     
-    const configDir = path.join(os.homedir(), '.twinsync');
+    const configDir = path.join(os.homedir(), '.jg-rsync');
     const configFile = path.join(configDir, 'configs.json');
     
     if (!fs.existsSync(configFile)) {
@@ -290,7 +314,7 @@ class SimpleTwinSync {
     const path = require('path');
     const os = require('os');
     
-    const configDir = path.join(os.homedir(), '.twinsync');
+    const configDir = path.join(os.homedir(), '.jg-rsync');
     const configFile = path.join(configDir, 'configs.json');
     
     if (!fs.existsSync(configFile)) {
@@ -337,7 +361,7 @@ class SimpleTwinSync {
     });
   }
 
-  private parseLsOutput(output: string, basePath: string): any[] {
+  private parseRemoteLsOutput(output: string, basePath: string): any[] {
     const lines = output.trim().split('\n');
     const files: any[] = [];
 
@@ -383,6 +407,7 @@ class SimpleTwinSync {
     this.mainWindow = new BrowserWindow({
       width: 1200,
       height: 800,
+      title: 'JG-Rsync',
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -399,7 +424,7 @@ class SimpleTwinSync {
         }
       });
     } else {
-      this.mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+      this.mainWindow.loadFile(join(__dirname, 'index.html'));
     }
   }
 
@@ -450,10 +475,10 @@ class SimpleTwinSync {
 }
 
 // Create and run the app
-const twinSync = new SimpleTwinSync();
+const jgRsync = new JGRsync();
 
 app.whenReady().then(() => {
-  twinSync.createWindow();
+  jgRsync.createWindow();
 });
 
 app.on('window-all-closed', () => {
@@ -464,6 +489,6 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    twinSync.createWindow();
+    jgRsync.createWindow();
   }
 });

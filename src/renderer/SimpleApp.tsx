@@ -167,9 +167,7 @@ const SimpleApp: React.FC = () => {
         setStatus(`Transferred ${selectedRight.length} file(s) to ${leftPath}`);
       } else if (rightType === 'remote' && isConnected) {
         // Remote to local transfer
-        for (const remoteFilePath of selectedRight) {
-          await window.electronAPI.download(remoteFilePath, leftPath);
-        }
+        await window.electronAPI.download(selectedRight, leftPath);
         setStatus(`Downloaded ${selectedRight.length} file(s) to ${leftPath}`);
       }
       
@@ -196,6 +194,13 @@ const SimpleApp: React.FC = () => {
     } else if (normalizedPath.includes('jesse@crexpedio.com - Google Drive')) {
       normalizedPath = '/Users/jgingold/Library/CloudStorage/GoogleDrive-jesse@crexpedio.com';
       console.log(`Resolved Google Drive symlink to: ${normalizedPath}`);
+    }
+    
+    // Handle special cases for parent directory navigation
+    if (path === '..' || path.endsWith('/..')) {
+      const currentPath = pane === 'left' ? leftPath : rightPath;
+      normalizedPath = currentPath.split('/').slice(0, -1).join('/') || '/';
+      console.log(`Parent directory navigation: ${normalizedPath}`);
     }
     
     console.log(`Final normalized path: ${normalizedPath}`);
@@ -358,7 +363,7 @@ const SimpleApp: React.FC = () => {
     <div className="app">
       {/* Header */}
       <div className="header">
-        <h1>TwinSync</h1>
+        <h1>JG-Rsync</h1>
         <div className="status">{status}</div>
       </div>
 
@@ -461,6 +466,8 @@ const SimpleApp: React.FC = () => {
         </div>
 
         {/* Middle Pane - Local Files */}
+        {/* Debug info */}
+        {(() => { console.log('Rendering left pane with', leftFiles.length, 'files'); return null; })()}
         <div className="pane left-pane">
           <div className="pane-header">
             <h3>Local Files</h3>
@@ -539,19 +546,18 @@ const SimpleApp: React.FC = () => {
         </div>
 
         {/* Right Pane - Remote/Local Files */}
+        {/* Debug info */}
+        {(() => { console.log('Rendering right pane with', rightFiles.length, 'files'); return null; })()}
         <div className="pane right-pane">
           <div className="pane-header">
-            <h3>
-              {rightType === 'local' ? 'Local Files' : 'Remote Files'}
+            <h3>{rightType === 'local' ? 'Local Files' : 'Remote Files'}</h3>
+            <div className="pane-actions">
               <button
                 className="btn btn-small"
                 onClick={toggleRightType}
-                style={{ marginLeft: '10px' }}
               >
                 Switch to {rightType === 'local' ? 'Remote' : 'Local'}
               </button>
-            </h3>
-            <div className="pane-actions">
               {rightType === 'local' ? (
                 <>
                   <button
