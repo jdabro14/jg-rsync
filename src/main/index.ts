@@ -346,7 +346,7 @@ class JGRsync {
       this.mainWindow.loadURL('http://localhost:5173');
       this.mainWindow.webContents.openDevTools();
     } else {
-      this.mainWindow.loadFile(join(__dirname, '../dist/index.html'));
+      this.mainWindow.loadFile(join(__dirname, '../index.html'));
     }
   }
 }
