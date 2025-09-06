@@ -1,7 +1,7 @@
 {
   "name": "jg-rsync",
   "version": "1.0.0",
-  "description": "A production-grade two-pane file transfer app for macOS",
+  "description": "A lightweight, production-grade three-pane file transfer application for macOS",
   "main": "dist/main/index.js",
   "homepage": "./",
   "scripts": {
@@ -20,7 +20,11 @@
     "file-transfer",
     "rsync",
     "sftp",
-    "macos"
+    "macos",
+    "three-pane",
+    "lightweight",
+    "typescript",
+    "react"
   ],
   "author": "JG-Rsync",
   "license": "MIT",
@@ -48,7 +52,6 @@
     "postcss": "^8.4.32",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "ssh2-sftp-client": "^10.0.3",
-    "tailwindcss": "^3.4.0"
+    "ssh2-sftp-client": "^10.0.3"
   }
 }
