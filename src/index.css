@@ -46,25 +46,33 @@ body {
   opacity: 0.9;
 }
 
-/* Three-Pane Layout */
-.three-pane-layout {
+/* Three Vertical Panes Layout */
+.three-vertical-panes {
   display: flex;
   flex: 1;
   overflow: hidden;
-  gap: 2px;
-  background: #dee2e6;
+  gap: 16px;
+  padding: 16px;
+  background: #f8f9fa;
   height: calc(100vh - 60px);
 }
 
-/* Connection Panel */
-.connection-pane {
-  width: 280px;
+.three-vertical-panes .pane {
+  display: flex;
+  flex-direction: column;
   background: white;
-  padding: 15px;
-  border-right: 1px solid #dee2e6;
-  overflow-y: auto;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+/* Connection Panel */
+.three-vertical-panes .connection-pane {
+  width: 320px;
   flex-shrink: 0;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+  padding: 15px;
+  overflow-y: auto;
 }
 
 .connection-pane h3 {
@@ -209,15 +217,10 @@ body {
 }
 
 /* File Panes */
-.left-pane, .right-pane {
+.three-vertical-panes .left-pane, 
+.three-vertical-panes .right-pane {
   flex: 1;
-  min-width: 300px;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: white;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 0;
   position: relative;
 }
 
@@ -487,8 +490,10 @@ body {
 
 /* Responsive Design */
 @media (max-width: 1200px) {
-  .three-pane-layout {
+  .three-vertical-panes {
     flex-direction: column;
+    gap: 8px;
+    padding: 8px;
   }
   
   .connection-pane {

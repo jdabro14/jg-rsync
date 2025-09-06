@@ -367,12 +367,12 @@ const SimpleApp: React.FC = () => {
         <div className="status">{status}</div>
       </div>
 
-      {/* Three-Pane Layout */}
-      <div className="three-pane-layout">
+      {/* Three Vertical Panes Layout */}
+      <div className="three-vertical-panes">
         {/* Left Pane - Connection & Configuration */}
         <div className="pane connection-pane">
           <div className="pane-header">
-            <h3>Connection & Config</h3>
+            <h3>⚙️ Connection & Config</h3>
           </div>
           <div className="connection-form">
             <div className="form-group">
@@ -470,7 +470,7 @@ const SimpleApp: React.FC = () => {
         {(() => { console.log('Rendering left pane with', leftFiles.length, 'files'); return null; })()}
         <div className="pane left-pane">
           <div className="pane-header">
-            <h3>Local Files</h3>
+            <h3>📁 Local Files</h3>
             <div className="pane-actions">
               <button
                 className="btn btn-secondary"
@@ -539,18 +539,18 @@ const SimpleApp: React.FC = () => {
           {selectedLeft.length > 0 && (
             <div className="transfer-actions">
               <button className="btn btn-primary" onClick={handleTransferLeftToRight}>
-                → Transfer {selectedLeft.length} file(s) to Right
+                ➡️ Transfer {selectedLeft.length} file(s) to Remote
               </button>
             </div>
           )}
         </div>
 
-        {/* Right Pane - Remote/Local Files */}
+        {/* Right Pane - Remote Files */}
         {/* Debug info */}
         {(() => { console.log('Rendering right pane with', rightFiles.length, 'files'); return null; })()}
         <div className="pane right-pane">
           <div className="pane-header">
-            <h3>{rightType === 'local' ? 'Local Files' : 'Remote Files'}</h3>
+            <h3>{rightType === 'local' ? '📁 Local Files' : '🌐 Remote Files'}</h3>
             <div className="pane-actions">
               <button
                 className="btn btn-small"
@@ -632,7 +632,7 @@ const SimpleApp: React.FC = () => {
           {selectedRight.length > 0 && (
             <div className="transfer-actions">
               <button className="btn btn-primary" onClick={handleTransferRightToLeft}>
-                ← Transfer {selectedRight.length} file(s) to Left
+                ⬅️ Transfer {selectedRight.length} file(s) to Local
               </button>
             </div>
           )}

@@ -2,12 +2,11 @@
   "appId": "com.jg-rsync.app",
   "productName": "JG-Rsync",
   "directories": {
-    "output": "dist_electron",
+    "output": "dist-electron",
     "buildResources": "assets"
   },
   "files": [
     "dist/**/*",
-    "electron/**/*",
     "node_modules/**/*",
     "package.json"
   ],
@@ -50,6 +49,5 @@
     "title": "JG-Rsync Installer",
     "icon": "assets/icon.icns"
   },
-  "afterSign": "scripts/notarize.js",
   "publish": null
 }
