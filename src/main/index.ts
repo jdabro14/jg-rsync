@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { spawn } from 'child_process';
+import { autoUpdater } from 'electron-updater';
 
 class JGRsync {
   private mainWindow: BrowserWindow | null = null;
@@ -9,6 +10,39 @@ class JGRsync {
 
   constructor() {
     this.setupIpcHandlers();
+    this.setupAutoUpdater();
+  }
+
+  private setupAutoUpdater() {
+    // Configure auto-updater
+    autoUpdater.checkForUpdatesAndNotify();
+    
+    // Set up update events
+    autoUpdater.on('checking-for-update', () => {
+      console.log('Checking for update...');
+    });
+
+    autoUpdater.on('update-available', (info) => {
+      console.log('Update available:', info);
+    });
+
+    autoUpdater.on('update-not-available', (info) => {
+      console.log('Update not available:', info);
+    });
+
+    autoUpdater.on('error', (err) => {
+      console.log('Error in auto-updater:', err);
+    });
+
+    autoUpdater.on('download-progress', (progressObj) => {
+      console.log('Download progress:', progressObj);
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+      console.log('Update downloaded:', info);
+      // Auto-restart the app after update
+      autoUpdater.quitAndInstall();
+    });
   }
 
   private setupIpcHandlers() {
