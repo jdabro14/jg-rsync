@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# TwinSync Cleanup Script
+# JG-Rsync Cleanup Script
 # Kills all running Electron, Vite, and concurrently processes
 
-echo "🧹 Cleaning up TwinSync processes..."
+echo "🧹 Cleaning up JG-Rsync processes..."
 
 # Kill all related processes
 pkill -f "electron" 2>/dev/null
@@ -24,7 +24,7 @@ pkill -9 -f "wait-on" 2>/dev/null
 REMAINING=$(ps aux | grep -E "(electron|vite|concurrently)" | grep -v grep | wc -l)
 
 if [ "$REMAINING" -eq 0 ]; then
-    echo "✅ All TwinSync processes cleaned up successfully"
+    echo "✅ All JG-Rsync processes cleaned up successfully"
 else
     echo "⚠️  Some processes may still be running:"
     ps aux | grep -E "(electron|vite|concurrently)" | grep -v grep

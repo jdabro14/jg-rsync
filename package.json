@@ -1,10 +1,11 @@
 {
-  "name": "twinsync",
+  "name": "jg-rsync",
   "version": "1.0.0",
   "description": "A production-grade two-pane file transfer app for macOS",
-  "main": "dist/main.js",
+  "main": "electron/main.js",
   "homepage": "./",
   "scripts": {
+    "start": "electron .",
     "dev": "vite",
     "cleanup": "./cleanup.sh",
     "electron:dev": "npm run cleanup && npm run build:main && concurrently -k \"vite --port 5173\" \"wait-on http://localhost:5173 && NODE_ENV=development electron . --inspect=5858\"",
@@ -12,6 +13,9 @@
     "build:main": "tsc",
     "build:renderer": "vite build",
     "dist": "npm run build && electron-builder",
+    "pack": "npm run build:main && npm run build:renderer && electron-builder --dir",
+    "mac": "npm run build:main && npm run build:renderer && electron-builder --mac",
+    "dmg": "npm run build:main && npm run build:renderer && electron-builder --mac dmg",
     "test": "jest",
     "lint": "eslint src --ext .ts,.tsx",
     "type-check": "tsc --noEmit"
@@ -23,7 +27,7 @@
     "sftp",
     "macos"
   ],
-  "author": "TwinSync",
+  "author": "JG-Rsync",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -35,6 +39,7 @@
     "concurrently": "^8.2.2",
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
+    "electron-packager": "^17.1.2",
     "eslint": "^8.55.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
@@ -56,8 +61,8 @@
     "tailwindcss": "^3.4.0"
   },
   "build": {
-    "appId": "com.twinsync.app",
-    "productName": "TwinSync",
+    "appId": "com.jg-rsync.app",
+    "productName": "JG-Rsync",
     "directories": {
       "output": "dist-electron"
     },
@@ -65,15 +70,34 @@
       "dist/**/*",
       "node_modules/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
     "mac": {
       "category": "public.app-category.utilities",
       "target": "dmg",
       "icon": "assets/icon.icns"
     },
     "dmg": {
-      "title": "TwinSync Installer",
-      "icon": "assets/icon.icns"
-    }
+      "title": "JG-Rsync Installer",
+      "icon": "assets/icon.icns",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "npmRebuild": false
   },
   "ts-node": {
     "esm": true,
