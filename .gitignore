@@ -93,3 +93,6 @@ pids/
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+dist-electron/
+build/
+LICENSES.chromium.html
