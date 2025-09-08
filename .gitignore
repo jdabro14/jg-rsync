@@ -96,3 +96,4 @@ pids/
 dist-electron/
 build/
 LICENSES.chromium.html
+JG-Rsync.app/

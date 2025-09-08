@@ -14,35 +14,8 @@ class JGRsync {
   }
 
   private setupAutoUpdater() {
-    // Configure auto-updater
-    autoUpdater.checkForUpdatesAndNotify();
-    
-    // Set up update events
-    autoUpdater.on('checking-for-update', () => {
-      console.log('Checking for update...');
-    });
-
-    autoUpdater.on('update-available', (info) => {
-      console.log('Update available:', info);
-    });
-
-    autoUpdater.on('update-not-available', (info) => {
-      console.log('Update not available:', info);
-    });
-
-    autoUpdater.on('error', (err) => {
-      console.log('Error in auto-updater:', err);
-    });
-
-    autoUpdater.on('download-progress', (progressObj) => {
-      console.log('Download progress:', progressObj);
-    });
-
-    autoUpdater.on('update-downloaded', (info) => {
-      console.log('Update downloaded:', info);
-      // Auto-restart the app after update
-      autoUpdater.quitAndInstall();
-    });
+    // Auto-updater disabled for local development
+    console.log('Auto-updater disabled for local development');
   }
 
   private setupIpcHandlers() {
@@ -366,15 +339,61 @@ class JGRsync {
   }
 
   createWindow() {
+    // Get window state from userData or use defaults
+    const userDataPath = app.getPath('userData');
+    const fs = require('fs');
+    const path = require('path');
+    const windowStatePath = path.join(userDataPath, 'window-state.json');
+    
+    console.log('Window state path:', windowStatePath);
+    
+    let windowState = {
+      width: 1400,
+      height: 900,
+      x: undefined,
+      y: undefined
+    };
+    
+    // Try to load saved window state
+    try {
+      if (fs.existsSync(windowStatePath)) {
+        const savedState = JSON.parse(fs.readFileSync(windowStatePath, 'utf8'));
+        windowState = { ...windowState, ...savedState };
+        console.log('Loaded window state:', windowState);
+      } else {
+        console.log('No saved window state, using defaults:', windowState);
+      }
+    } catch (error) {
+      console.log('Could not load window state, using defaults:', error);
+    }
+
     this.mainWindow = new BrowserWindow({
-      width: 1200,
-      height: 800,
+      width: windowState.width,
+      height: windowState.height,
+      x: windowState.x,
+      y: windowState.y,
+      minWidth: 1000,
+      minHeight: 600,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
         preload: join(__dirname, '../preload/index.js')
       }
     });
+
+    console.log('Created window with size:', windowState.width, 'x', windowState.height);
+
+    // Save window state on close and before-quit
+    const saveWindowState = () => {
+      if (this.mainWindow) {
+        const bounds = this.mainWindow.getBounds();
+        console.log('Saving window state:', bounds);
+        fs.writeFileSync(windowStatePath, JSON.stringify(bounds, null, 2));
+      }
+    };
+
+    this.mainWindow.on('close', saveWindowState);
+    app.on('before-quit', saveWindowState);
 
     if (process.env.NODE_ENV === 'development') {
       this.mainWindow.loadURL('http://localhost:5173');

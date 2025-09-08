@@ -12,8 +12,8 @@
   ],
   "extraResources": [
     {
-      "from": "assets",
-      "to": "assets"
+      "from": "assets/icon.icns",
+      "to": "icon.icns"
     }
   ],
   "mac": {
