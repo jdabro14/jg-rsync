@@ -58,30 +58,56 @@ class JGRsync {
   }
 
   private async testSSHConnection(config: any): Promise<void> {
+    console.log('Testing SSH connection with config:', {
+      user: config.user,
+      host: config.host,
+      port: config.port,
+      keyPath: config.keyPath
+    });
+
     return new Promise((resolve, reject) => {
-      const ssh = spawn('ssh', [
+      const sshArgs = [
         '-i', config.keyPath,
         '-p', config.port.toString(),
         '-o', 'ConnectTimeout=10',
         '-o', 'StrictHostKeyChecking=no',
         `${config.user}@${config.host}`,
         'echo "SSH connection test successful"'
-      ]);
+      ];
+      
+      console.log('Running SSH test with args:', sshArgs);
+      
+      const ssh = spawn('ssh', sshArgs);
 
-      let output = '';
+      let stdout = '';
+      let stderr = '';
+
       ssh.stdout.on('data', (data) => {
-        output += data.toString();
+        const output = data.toString();
+        stdout += output;
+        console.log('SSH stdout:', output);
       });
 
       ssh.stderr.on('data', (data) => {
-        output += data.toString();
+        const output = data.toString();
+        stderr += output;
+        console.log('SSH stderr:', output);
+      });
+
+      ssh.on('error', (error) => {
+        console.error('SSH process error:', error);
+        reject(new Error(`SSH process error: ${error.message}`));
       });
 
       ssh.on('close', (code) => {
+        console.log(`SSH process exited with code: ${code}`);
+        console.log('SSH stdout:', stdout);
+        console.log('SSH stderr:', stderr);
+        
         if (code === 0) {
           resolve();
         } else {
-          reject(new Error(`SSH test failed: ${output}`));
+          reject(new Error(`SSH test failed with exit code ${code}. Stderr: ${stderr}`));
         }
       });
     });
@@ -153,32 +179,117 @@ class JGRsync {
     });
   }
 
+  private async verifyRemoteFiles(sourcePaths: string[]): Promise<void> {
+    console.log('Verifying remote files exist:', sourcePaths);
+    
+    for (const path of sourcePaths) {
+      try {
+        await this.checkRemoteFileExists(path);
+      } catch (error) {
+        throw new Error(`File does not exist on remote server: ${path}`);
+      }
+    }
+    
+    console.log('All files verified to exist on remote server');
+  }
+
+  private async checkRemoteFileExists(remotePath: string): Promise<void> {
+    console.log(`Checking if file exists: ${remotePath}`);
+    
+    return new Promise((resolve, reject) => {
+      const ssh = spawn('ssh', [
+        '-i', this.currentConfig.keyPath,
+        '-p', this.currentConfig.port.toString(),
+        '-o', 'StrictHostKeyChecking=no',
+        `${this.currentConfig.user}@${this.currentConfig.host}`,
+        `test -e "${remotePath}"`
+      ]);
+
+      let stdout = '';
+      let stderr = '';
+
+      ssh.stdout.on('data', (data) => {
+        stdout += data.toString();
+        console.log(`File check stdout: ${data.toString()}`);
+      });
+
+      ssh.stderr.on('data', (data) => {
+        stderr += data.toString();
+        console.log(`File check stderr: ${data.toString()}`);
+      });
+
+      ssh.on('close', (code) => {
+        console.log(`File check exited with code: ${code} for path: ${remotePath}`);
+        console.log(`File check stdout: ${stdout}`);
+        console.log(`File check stderr: ${stderr}`);
+        
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`File does not exist: ${remotePath} (exit code: ${code})`));
+        }
+      });
+
+      ssh.on('error', (error) => {
+        console.error(`SSH error checking file: ${error.message}`);
+        reject(new Error(`SSH error checking file: ${error.message}`));
+      });
+    });
+  }
+
   private async handleUpload(_event: any, sourcePaths: string[], destDir: string): Promise<void> {
     if (!this.isConnected || !this.currentConfig) {
       throw new Error('Not connected');
     }
 
+    console.log('Starting upload with config:', {
+      user: this.currentConfig.user,
+      host: this.currentConfig.host,
+      sourcePaths,
+      destDir
+    });
+
     return new Promise((resolve, reject) => {
-      const rsync = spawn('rsync', [
+      const rsyncArgs = [
         '-avz',
         '--progress',
         ...sourcePaths,
-        `${this.currentConfig.user}@${this.currentConfig.host}:${destDir}`
-      ]);
+        `${this.currentConfig.user}@${this.currentConfig.host}:"${destDir}"`
+      ];
+      
+      console.log('Running rsync with args:', rsyncArgs);
+      
+      const rsync = spawn('rsync', rsyncArgs);
+
+      let stdout = '';
+      let stderr = '';
 
       rsync.stdout.on('data', (data) => {
-        console.log('Upload progress:', data.toString());
+        const output = data.toString();
+        stdout += output;
+        console.log('Upload progress:', output);
       });
 
       rsync.stderr.on('data', (data) => {
-        console.log('Upload info:', data.toString());
+        const output = data.toString();
+        stderr += output;
+        console.log('Upload info:', output);
+      });
+
+      rsync.on('error', (error) => {
+        console.error('Rsync process error:', error);
+        reject(new Error(`Rsync process error: ${error.message}`));
       });
 
       rsync.on('close', (code) => {
+        console.log(`Rsync process exited with code: ${code}`);
+        console.log('Stdout:', stdout);
+        console.log('Stderr:', stderr);
+        
         if (code === 0) {
           resolve();
         } else {
-          reject(new Error('Upload failed'));
+          reject(new Error(`Upload failed with exit code ${code}. Stderr: ${stderr}`));
         }
       });
     });
@@ -189,27 +300,66 @@ class JGRsync {
       throw new Error('Not connected');
     }
 
-    return new Promise((resolve, reject) => {
-      const rsync = spawn('rsync', [
+    console.log('Starting download with config:', {
+      user: this.currentConfig.user,
+      host: this.currentConfig.host,
+      sourcePaths,
+      destDir
+    });
+
+    return new Promise(async (resolve, reject) => {
+      // First, verify that the files exist on the remote server
+      try {
+        await this.verifyRemoteFiles(sourcePaths);
+      } catch (error) {
+        reject(new Error(`File verification failed: ${error.message}`));
+        return;
+      }
+      const rsyncArgs = [
         '-avz',
         '--progress',
-        ...sourcePaths.map(path => `${this.currentConfig.user}@${this.currentConfig.host}:${path}`),
+        ...sourcePaths.map(path => `${this.currentConfig.user}@${this.currentConfig.host}:"${path}"`),
         destDir
-      ]);
+      ];
+      
+      console.log('Running rsync with args:', rsyncArgs);
+      
+      const rsync = spawn('rsync', rsyncArgs);
+
+      let stdout = '';
+      let stderr = '';
 
       rsync.stdout.on('data', (data) => {
-        console.log('Download progress:', data.toString());
+        const output = data.toString();
+        stdout += output;
+        console.log('Download progress:', output);
       });
 
       rsync.stderr.on('data', (data) => {
-        console.log('Download info:', data.toString());
+        const output = data.toString();
+        stderr += output;
+        console.log('Download info:', output);
+      });
+
+      rsync.on('error', (error) => {
+        console.error('Rsync process error:', error);
+        reject(new Error(`Rsync process error: ${error.message}`));
       });
 
       rsync.on('close', (code) => {
+        console.log(`Rsync process exited with code: ${code}`);
+        console.log('Stdout:', stdout);
+        console.log('Stderr:', stderr);
+        
         if (code === 0) {
           resolve();
+        } else if (code === 23) {
+          // Exit code 23 means some files were not found
+          reject(new Error(`Some files not found on remote server. Please check the file paths. Stderr: ${stderr}`));
+        } else if (stderr.includes('No such file or directory')) {
+          reject(new Error(`Files not found on remote server: ${stderr}`));
         } else {
-          reject(new Error('Download failed'));
+          reject(new Error(`Download failed with exit code ${code}. Stderr: ${stderr}`));
         }
       });
     });
@@ -385,10 +535,14 @@ class JGRsync {
 
     // Save window state on close and before-quit
     const saveWindowState = () => {
-      if (this.mainWindow) {
-        const bounds = this.mainWindow.getBounds();
-        console.log('Saving window state:', bounds);
-        fs.writeFileSync(windowStatePath, JSON.stringify(bounds, null, 2));
+      try {
+        if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+          const bounds = this.mainWindow.getBounds();
+          console.log('Saving window state:', bounds);
+          fs.writeFileSync(windowStatePath, JSON.stringify(bounds, null, 2));
+        }
+      } catch (error) {
+        console.error('Error saving window state:', error);
       }
     };
 
